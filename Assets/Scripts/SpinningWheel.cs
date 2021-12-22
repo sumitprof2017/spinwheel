@@ -3,25 +3,44 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using System;
+using Newtonsoft.Json;
+
 public class SpinningWheel : Singleton<SpinningWheel>
 {
     public float speedRotate;
     public bool spinBool,stopWheelBool,backwardSpinBool;
     public TMP_InputField inputValue;
-
-    
+    public GameObject MainWheel;
+    string url;
     // Start is called before the first frame update
     void Start()
     {
+         url = "https://admin.wheeloffortune.one/options/?distributor=new-milkyway";
+        StartCoroutine(RestSupervisor.Instance.GetRequest(url, callback => {
 
+            if (callback != null)
+            {
+                print("callback is:" + callback);
+                InitialData initOb = JsonConvert.DeserializeObject<InitialData>(callback);
+                for (int i = 0; i < initOb.results.Count; i++)
+                {
+                    int ChildIndexOfSelectedGameObject = 12 + i;
+                    GameObject textGameObj = MainWheel.transform.GetChild(ChildIndexOfSelectedGameObject).gameObject;
+                    textGameObj.GetComponent<TMP_Text>().text = initOb.results[i].option;
+                }
+
+
+            }
+        }));
     }
 
 
     public void SpinWheelButtonClick()
     {
-        spinBool = true;
-        speedRotate = 1800;
-        StartCoroutine(spinWheel());
+       
+
+  
     }
 
     public void BackWardSpin()
