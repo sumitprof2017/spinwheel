@@ -5,18 +5,21 @@ using UnityEngine;
 using TMPro;
 using System;
 using Newtonsoft.Json;
+using Random = UnityEngine.Random;
 
 public class SpinningWheel : Singleton<SpinningWheel>
 {
     public float speedRotate;
     public bool spinBool,stopWheelBool,backwardSpinBool;
     public TMP_InputField inputValue;
-    public GameObject MainWheel;
-    string url;
+    public GameObject MainWheel,TextParentPanel,PolygonColliderGameObjectPanel;
+    string url,prizeWinnerUrl;
     // Start is called before the first frame update
     void Start()
     {
          url = "https://admin.wheeloffortune.one/options/?distributor=new-milkyway";
+        prizeWinnerUrl = "https://admin.wheeloffortune.one/fortune/?code=";
+        //InitialHit
         StartCoroutine(RestSupervisor.Instance.GetRequest(url, callback => {
 
             if (callback != null)
@@ -25,9 +28,14 @@ public class SpinningWheel : Singleton<SpinningWheel>
                 InitialData initOb = JsonConvert.DeserializeObject<InitialData>(callback);
                 for (int i = 0; i < initOb.results.Count; i++)
                 {
-                    int ChildIndexOfSelectedGameObject = 12 + i;
-                    GameObject textGameObj = MainWheel.transform.GetChild(ChildIndexOfSelectedGameObject).gameObject;
+                    GameObject textGameObj = TextParentPanel.transform.GetChild(i).gameObject;
                     textGameObj.GetComponent<TMP_Text>().text = initOb.results[i].option;
+
+
+                    //PolygonColliderGameObject name change
+                     PolygonColliderGameObjectPanel.transform.GetChild(i).gameObject.name = initOb.results[i].option;
+
+
                 }
 
 
@@ -37,10 +45,40 @@ public class SpinningWheel : Singleton<SpinningWheel>
 
 
     public void SpinWheelButtonClick()
-    {
-       
+    {//hit url to see what he wins first and after response if he's token is expired or not.
+        string token = inputValue.GetComponent<TMP_InputField>().text;
+        if (token.Equals(""))
+        {
 
-  
+        }
+        else
+        {
+            StartCoroutine(RestSupervisor.Instance.GetRequest(prizeWinnerUrl + token, callback => {
+
+                if (callback != null)
+                {
+                    print("callback is:" + callback);
+                    WinnerPrizeDecide winnerPrizeDecideObj = JsonConvert.DeserializeObject<WinnerPrizeDecide>(callback);
+                    if (winnerPrizeDecideObj.prize.Equals("expired"))
+                    {
+                        print("Your token is expired");
+                    }
+                    else
+                    {
+                        WinnerGameObjectName = winnerPrizeDecideObj.prize;
+                        spinBool = true;
+                        speedRotate = 1800;
+                        StartCoroutine(spinWheel());
+                    }
+
+
+                }
+            }));
+
+        }
+
+       
+        
     }
 
     public void BackWardSpin()
@@ -84,7 +122,7 @@ public class SpinningWheel : Singleton<SpinningWheel>
     }
 
 
-
+    string WinnerGameObjectName;
     float InputValueNumber;
     GameObject ObjectToLandPrize, ObjectToStartBackSpinFrom;
   public  string StartBackSpinObjectName, LandObjectName;
@@ -96,8 +134,7 @@ public class SpinningWheel : Singleton<SpinningWheel>
             this.gameObject.transform.Rotate(Vector3.forward * speedRotate * Time.deltaTime);
 
 
-            string colourInString = inputValue.GetComponent<TMP_InputField>().text;
-
+           
            
 
          
@@ -109,49 +146,22 @@ public class SpinningWheel : Singleton<SpinningWheel>
             if (speedRotate == 50)
             {
                 //putting collider on object to start to the object where to stop
-                 ObjectToLandPrize = GameObject.Find("/Canvas/Panel/MainWheel/" + colourInString);
+                 ObjectToLandPrize = GameObject.Find("/Canvas/Panel/MainWheel/PollygonGameObjectPanel/" + WinnerGameObjectName);
                 ObjectToLandPrize.GetComponent<PolygonCollider2D>().enabled = true;
-                GameObject parent = ObjectToLandPrize.transform.parent.gameObject;
-                if (colourInString.Equals("blue"))//9 sibling index
-                {
-                    ObjectToStartBackSpinFrom = parent.transform.GetChild(0).gameObject;
+/*                GameObject parent = ObjectToLandPrize.transform.parent.gameObject;
+*/
+
+                int randomChildIndex = Random.Range(0, 12);
+                //get parent of objectofcolliderstart to get objectofcollidertostop
+
+              
+
+                    ObjectToStartBackSpinFrom = PolygonColliderGameObjectPanel.transform.GetChild(randomChildIndex).gameObject;
                     ObjectToStartBackSpinFrom.GetComponent<PolygonCollider2D>().enabled = true;
 
                     StartBackSpinObjectName = ObjectToStartBackSpinFrom.name;
                     LandObjectName = ObjectToLandPrize.name;
-                }
-                else if (colourInString.Equals("violet"))//10 sibling index
-                {
-                    ObjectToStartBackSpinFrom = parent.transform.GetChild(1).gameObject;
-                    ObjectToStartBackSpinFrom.GetComponent<PolygonCollider2D>().enabled = true;
-
-                    StartBackSpinObjectName = ObjectToStartBackSpinFrom.name;
-                    LandObjectName = ObjectToLandPrize.name;
-                }
-                else if (colourInString.Equals("darkviolet"))//11 sibling index
-                {
-                    ObjectToStartBackSpinFrom = parent.transform.GetChild(2).gameObject;
-                    ObjectToStartBackSpinFrom.GetComponent<PolygonCollider2D>().enabled = true;
-
-                    StartBackSpinObjectName = ObjectToStartBackSpinFrom.name;
-                    LandObjectName = ObjectToLandPrize.name;
-                }
-                else
-                {
-
-                    //get parent of objectofcolliderstart to get objectofcollidertostop
-                  
-                    int getchildIndexOFldangingObject = ObjectToLandPrize.transform.GetSiblingIndex();
-                    //get object to stop and add trigger
-                    int childIndexOfStopObject = getchildIndexOFldangingObject + 3;
-
-
-                    ObjectToStartBackSpinFrom = parent.transform.GetChild(childIndexOfStopObject).gameObject;
-                    ObjectToStartBackSpinFrom.GetComponent<PolygonCollider2D>().enabled = true;
-
-                    StartBackSpinObjectName = ObjectToStartBackSpinFrom.name;
-                    LandObjectName = ObjectToLandPrize.name;
-                }
+                
             }
 
 

@@ -18,8 +18,8 @@ public class RestSupervisor : Singleton<RestSupervisor>
         }
         else
         {
-/*            Debug.Log("Received: " + www.downloadHandler.text);
-*/            callback(www.downloadHandler.text);
+            Debug.Log("Received: " + www.downloadHandler.text); 
+            callback(www.downloadHandler.text);
         }
     }
 
